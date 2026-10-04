@@ -34,30 +34,24 @@
           web-bzip2 = pkgs.renpyPackages.web.libraries.bzip2;
           web-xz = pkgs.renpyPackages.web.libraries.xz;
           web-python = pkgs.renpyPackages.web.python;
-          hello = pkgs.mkRenpyProject {
-            pname = "renpy-hello";
-            version = "0.1.0";
-            src = ./examples/hello;
-          };
+
         }
       );
-      apps = eachSystem (system: {
-        default = {
-          type = "app";
-          program = "${self.packages.${system}.hello}/bin/renpy-hello";
-        };
-      });
       checks = eachSystem (
         system:
         let
           pkgs = pkgsFor system;
+          testProject = pkgs.mkRenpyProject {
+            pname = "renpy-project-check";
+            src = ./tests/minimal-project;
+          };
         in
         {
           project = pkgs.runCommand "renpy-project-smoke" { } ''
-            test -f ${self.packages.${system}.hello}/share/renpy-hello/game/script.rpyc
-            test -f ${self.packages.${system}.hello}/share/renpy-hello/lint.txt
+            test -f ${testProject}/share/renpy-project-check/game/script.rpyc
+            test -f ${testProject}/share/renpy-project-check/lint.txt
             export HOME=$TMPDIR
-            ${self.packages.${system}.hello}/bin/renpy-hello --version
+            ${testProject}/bin/renpy-project-check --version
             touch $out
           '';
           python-packages = (pkgs.renpyPackages.withPythonPackages (ps: [ ps.pillow ])).mkProject {
@@ -86,7 +80,7 @@
                 (builtins.tryEval (
                   pkgs.mkRenpyProject {
                     pname = "invalid/name";
-                    src = ./examples/hello;
+                    src = ./tests/minimal-project;
                   }
                 )).success
               then

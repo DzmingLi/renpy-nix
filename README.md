@@ -7,8 +7,7 @@ and standalone desktop distributions are not yet implemented. iOS is excluded.
 ```sh
 nix flake check
 nix build .#runtime
-nix build .#hello
-nix run
+nix run .#runtime -- /path/to/project
 nix develop
 renpy /path/to/project lint
 ```

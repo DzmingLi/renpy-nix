@@ -45,7 +45,7 @@ Python must respect sandbox restrictions during compile/lint.
 
 The installed project is immutable. Compiled script files are produced before
 installation; saves use Ren'Py's user save directory. Runtime smoke checks test
-version startup and example compilation, not interactive graphics or save/load.
+version startup and test fixture compilation, not interactive graphics or save/load.
 
 ## Next boundaries
 
@@ -58,7 +58,7 @@ version startup and example compilation, not interactive graphics or save/load.
 
 ## Initial validation
 
-`nix flake check` passed on x86_64-linux: runtime version startup, normal-project
+`nix flake check` passed on x86_64-linux: runtime version startup, test-project
 compilation/lint, installed compiled-script presence, packaged command startup,
 and rejection of an unsafe executable name. The native engine was substituted
 from the Nix binary cache using the source-build derivation; this session did
@@ -117,7 +117,7 @@ implemented. Android, Windows and macOS are planned; iOS is excluded.
 ### Validation results
 
 The component milestone passes seven x86_64-linux flake checks: native runtime,
-compiled example, invalid-name contract, a project using Pillow, SDK startup and
+compiled test fixture, invalid-name contract, a project using Pillow, SDK startup and
 compiled updater, Wasm compression round trips, and target Python artifacts.
 Linux engine extensions, Binaryen, Web compression libraries and target Python
 were compiled from source locally. Both Linux systems pass evaluation; aarch64

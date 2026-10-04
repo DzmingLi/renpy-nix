@@ -4,5 +4,5 @@ result-*
 *.rpyc
 *.rpymc
 __pycache__/
-examples/**/game/cache/
-examples/**/game/saves/
+tests/**/game/cache/
+tests/**/game/saves/
