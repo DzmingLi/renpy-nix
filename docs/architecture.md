@@ -19,12 +19,15 @@ Expose selectable components through a package set rather than hiding all
 artifacts in one SDK. Runtime, SDK and source are explicit. This is a component
 model, not a claim of Fenix-compatible APIs or multi-version channels.
 
-The minimal runtime and full SDK currently compile separately because upstream
-nixpkgs couples native compilation and common-script installation. They share
-fetched sources and dependency derivations, but not the native compilation
-result. A future engine-core/common-scripts/launcher split is worthwhile once
-we own or upstream that builder boundary. Creating thin output copies would
-not provide independent native compilation caching, so we do not pretend it does.
+Native Cython/C extensions now have their own `nativeExtensions` derivation.
+Both the minimal runtime and full SDK consume that same compiled component.
+It contains package extensions and the top-level `_renpy` extension. Their
+assembly derivations compile Python/common scripts and copy or link native
+extensions; they never invoke `build_ext` or `install_lib` again.
+
+The full SDK still compiles its bundled examples and common scripts separately
+from the minimal runtime. Splitting common scripts further is possible, but
+native compilation is the expensive boundary and now genuinely shared.
 
 Games are separate derivations depending on an unchanged runtime. Changing a
 game therefore does not rebuild the engine. Added Python packages form a small
@@ -47,8 +50,8 @@ version startup and example compilation, not interactive graphics or save/load.
 ## Next boundaries
 
 - Validate interactive rendering and save/load on both supported Linux systems.
-- Factor the native engine and common scripts only when that creates real reuse.
-- Add SDK launcher checks and externally supplied Python environment tests.
+- Factor common scripts further if their compilation cost justifies it.
+- Exercise interactive launcher rendering and save/load.
 - Add explicit versioned package sets when multiple engine versions are maintained.
 - Treat web, Android and portable distribution toolchains as optional components,
   each with their own dependencies and checks.
@@ -60,4 +63,62 @@ compilation/lint, installed compiled-script presence, packaged command startup,
 and rejection of an unsafe executable name. The native engine was substituted
 from the Nix binary cache using the source-build derivation; this session did
 not force a fresh Cython compilation. Both Linux systems passed flake evaluation.
-The full SDK and interactive rendering have not been exercised locally.
+This describes the initial milestone. See the component milestone below for
+subsequent SDK and source-build validation.
+
+
+## Component milestone
+
+The native engine extensions are built from source in this milestone. A Python
+integration fixture imports Pillow and calls its image API during project init;
+this exercises the existing nixpkgs package-set extension hook.
+
+The SDK patches component installation, Android SDK installation, local addon
+ZIP installation and SDK updates to explain Nix management before touching its
+installation. Update-channel fetching returns an empty list. Launcher project
+scratch directories use the system temporary directory instead of the SDK.
+Patched launcher scripts are compiled before installation. These changes do not
+claim that every launcher function has been validated as immutable; editor
+integration and interactive workflows still need separate checks.
+
+### Web foundations
+
+The Web dependency set is pinned to the renpy-build revision from 2026-05-17,
+aligned in date with the existing engine source pin. Its source tasks choose
+Emscripten 3.1.67 and CPython 3.12.8. Alignment in date is not yet an engine/runtime
+compatibility guarantee; complete engine linking and browser tests remain.
+
+Emscripten is packaged from its source scripts with nixpkgs LLVM 19.1.7 and a
+source-built Binaryen 119. This is not the exact emsdk binary bundle. Binaryen
+includes the upstream GCC 16 compatibility fix, backported from commit
+2ff34a2e8adfddc35c32cb0180eed22477fe0553. Its normal DWARF support remains enabled.
+
+zlib 1.3.1, bzip2 1.0.8 and xz 5.4.2 use individually hashed source tarballs from
+the pinned upstream repository. Each library builds into a separate wasm archive.
+No emsdk installer, pip download, or Emscripten ports fetch is used. Each build
+uses a disposable HOME and EM_CACHE, outside the immutable installation.
+
+The target CPython is a library/sysroot component for subsequent engine linking,
+not a supported standalone Python executable. It consumes those libraries and the upstream static-module
+list. A host Python from nixpkgs performs generation and installation work;
+the target Python is never used as a build-host executable. The upstream opcode
+transformation is retained for the future Ren'Py Web link stage.
+
+The compression check links all three wasm libraries and executes real
+compression/decompression round trips in Node. The Python artifact check
+verifies the installed archive, its Wasm object format, headers and standard library. This alone does
+not establish browser execution or full Ren'Py Web compatibility.
+
+There is deliberately no `web.runtime` or Web game builder yet: SDL, image/text
+libraries, FFmpeg, engine extensions, linking and browser execution remain to be
+implemented. Android, Windows and macOS are planned; iOS is excluded.
+
+
+### Validation results
+
+The component milestone passes seven x86_64-linux flake checks: native runtime,
+compiled example, invalid-name contract, a project using Pillow, SDK startup and
+compiled updater, Wasm compression round trips, and target Python artifacts.
+Linux engine extensions, Binaryen, Web compression libraries and target Python
+were compiled from source locally. Both Linux systems pass evaluation; aarch64
+execution and interactive launcher/browser rendering remain unverified.
