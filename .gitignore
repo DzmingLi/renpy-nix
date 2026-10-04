@@ -1,0 +1,8 @@
+result
+result-*
+.direnv/
+*.rpyc
+*.rpymc
+__pycache__/
+examples/**/game/cache/
+examples/**/game/saves/
